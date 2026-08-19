@@ -439,6 +439,59 @@ function signalAgreement(x){
   if(x.alphaLine>0){if(x.price>x.alphaLine)pos++;else neg++;}
   return Math.round(Math.max(pos,neg)/7*100);
 }
+// ---- Final Output: a plain-English buy/no-buy note blending the STWP technical score with manual analyst research ----
+function buildFinalVerdict(x){
+  const flags=x.flags||[];
+  const badFlags=flags.filter(f=>f.c==="bad").length;
+  const warnFlags=flags.filter(f=>f.c==="warn").length;
+
+  // Tag is a direct read of the STWP score/conviction already shown at the top of this page
+  // (x.conviction: HIGH/STRONG/DEVELOPING/WATCH — see convictionFor()) combined with direction (x.bias).
+  // This keeps the tag from ever disagreeing with the numbers directly above it.
+  let tag,tagClass;
+  if(x.bias==="Neutral"){
+    tag="STWP NO EDGE — WAIT";
+    tagClass="warn";
+  } else if(x.bias==="Bullish"){
+    if(x.conviction==="HIGH"){tag="STRONG STWP BUY";tagClass="good";}
+    else if(x.conviction==="STRONG"){tag="STWP BUY";tagClass="good";}
+    else if(x.conviction==="DEVELOPING"){tag="STWP WATCH";tagClass="warn";}
+    else{tag="STWP WATCH (LOW CONVICTION)";tagClass="warn";}
+  } else { // Bearish
+    if(x.conviction==="HIGH"){tag="STRONG STWP AVOID";tagClass="bad";}
+    else if(x.conviction==="STRONG"){tag="STWP AVOID";tagClass="bad";}
+    else if(x.conviction==="DEVELOPING"){tag="STWP CAUTION";tagClass="bad";}
+    else{tag="STWP CAUTION (LOW CONVICTION)";tagClass="warn";}
+  }
+
+  let analystNote="";
+  if(x.research){
+    const bullishAnalyst=x.consensus==="Strong Bullish"||x.consensus==="Bullish";
+    const bearishAnalyst=x.consensus==="Strong Bearish"||x.consensus==="Bearish";
+    if(x.bias==="Bullish"&&bearishAnalyst){
+      analystNote=` However, manually entered analyst consensus (${x.consensus}) does not support this technical setup — treat as a mixed signal and verify before buying.`;
+      tag+=" — ANALYST DISAGREES";
+    } else if(x.bias==="Bearish"&&bullishAnalyst){
+      analystNote=` Manually entered analyst consensus (${x.consensus}) is more positive than the technical picture — this is a mixed signal worth a closer look.`;
+      tag+=" — ANALYST DISAGREES";
+    } else if(bullishAnalyst||bearishAnalyst){
+      analystNote=` This is reinforced by ${x.consensus.toLowerCase()} analyst consensus (${x.consensusStrength}/100 strength).`;
+    }
+  }
+
+  const dataNote=x.dataQuality<70?` Data quality for this stock is only ${x.dataQuality}% — double-check the underlying CSV inputs before acting on this.`:"";
+  const flagNote=badFlags?` There ${badFlags===1?"is":"are"} ${badFlags} red flag${badFlags===1?"":"s"} above worth reviewing before entering.`:warnFlags?` ${warnFlags} caution flag${warnFlags===1?"":"s"} noted above.`:"";
+
+  const text=`${x.symbol} shows a ${x.bias.toLowerCase()} technical setup with a ${x.total}/100 STWP score (${x.conviction.toLowerCase()} conviction). `+
+    `Trend/structure scored ${x.tech}/20, volume participation ${x.vol}/15, momentum ${x.mom}/15, and modeled risk/reward is ${x.ratio>0?x.ratio.toFixed(2)+"×":"not established"} `+
+    `over an expected ${x.window} window (target ₹${fmt(x.expectedTarget,2)}, ${x.move.toFixed(1)}% move). `+
+    (x.research?`Manually entered analyst input is ${x.consensus.toLowerCase()} (${x.consensusStrength}/100 strength), with median target upside of ${x.medianUp.toFixed(1)}%.`:`No manual analyst research has been entered for this stock, so this note leans on technicals only.`)+
+    analystNote+flagNote+dataNote+
+    ` This is a research aid, not investment advice — confirm against your own analysis before acting.`;
+
+  return {tag,tagClass,text};
+}
+
 function buildFlags(x){
   const f=[];
   if(x.rsi>=75)f.push({t:"RSI overbought",c:"warn"});
@@ -579,6 +632,7 @@ function openStockWorkspace(symbol){
         ${x.research.strongBuy} / ${x.research.buy} / ${x.research.hold} / ${x.research.sell} / ${x.research.strongSell}
       </div>`:
       `<div class="formula">No analyst data entered. The model does not invent research calls.</div>`;
+  const verdict=buildFinalVerdict(x);
 
   document.getElementById("analysisView").innerHTML=`
   <button class="btn backBtn" onclick="closeStockAnalysis()">← BACK TO POTENTIAL MOVERS</button>
@@ -639,6 +693,16 @@ function openStockWorkspace(symbol){
   <div class="section"><h2>7. Data Quality</h2>
     <div class="formula"><b>${x.dataQuality}%</b><br>${x.dataMissing.length?`Missing / incomplete: ${x.dataMissing.join(", ")}`:"Core model inputs are present."}</div>
   </div>
+
+  <div class="section"><h2>8. FINAL OUTPUT — Buy Decision Note</h2>
+    <div class="formula" style="padding:18px">
+      <div style="text-align:center;margin-bottom:12px">
+        <span style="display:inline-block;padding:9px 20px;border-radius:20px;font-weight:800;font-size:14px;letter-spacing:.02em;${verdict.tagClass==="good"?"background:#0b3e2c;color:#61e6a4":verdict.tagClass==="bad"?"background:#4a1820;color:#ff8892":"background:#4a3b16;color:#ffd166"}">${verdict.tag}</span>
+      </div>
+      <div style="line-height:1.85">${verdict.text}</div>
+    </div>
+  </div>
+
   <div class="notice">STWP Potential Movers Engine is an educational/research-ranking tool. Expected moves and time windows are model estimates, not guarantees.</div>
   <button class="btn backBtn" style="margin-top:18px" onclick="closeStockAnalysis()">← BACK TO POTENTIAL MOVERS</button>
   `;
@@ -655,7 +719,6 @@ function closeStockAnalysis(){
   window.scrollTo(0,0);
 }
 
-
 let activeStockSymbol="",trendlyneText="",trendlyneFileName="";
 
 
@@ -668,7 +731,7 @@ async function loadTrendlynePDF(file){
   const status=document.getElementById("pdfStatus");
   status.textContent=`Reading ${file.name}…`;
   try{
-    const pdfjs=window.pdfjsLib || await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+    const pdfjs=await getPdfjsLib();
     const pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
     let pages=[];
     for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const c=await page.getTextContent();pages.push(`--- Page ${i} ---\n${c.items.map(a=>a.str).join(" ")}`)}
@@ -977,6 +1040,7 @@ function resetApp(){
   imported=[];
   results=[];
   researchData={};
+  closeStockAnalysis();
   document.getElementById("mode").value="sample";
   document.getElementById("search").value="";
   document.getElementById("csvFile").value="";
@@ -988,5 +1052,6 @@ function resetApp(){
 }
 
 </script>
-<span id="dataStatus" style="display:none"></span></body>
+<span id="dataStatus" style="display:none"></span>
+</body>
 </html>
