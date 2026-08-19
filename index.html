@@ -1,0 +1,992 @@
+
+<div class="panel" id="researchPanel">
+    <h3 style="margin-top:0">Manual Analyst / Research Input</h3>
+    <div class="small" style="margin-bottom:10px">
+      Enter only the analyst information you can see in TradingView. The technical data continues to come from your Chartink CSV.
+      Data is stored in this page only and matched by Symbol.
+    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>STWP Potential Movers Engine</title>
+<style>
+:root{--bg:#08111f;--panel:#0e1a2b;--panel2:#111f33;--line:#243550;--text:#e8eef7;--muted:#91a0b8;--green:#28d17c;--red:#ff5d6c;--yellow:#ffc857;--cyan:#38bdf8}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#06101d,#0a1424 55%,#07111d);color:var(--text);font:14px Inter,Arial,sans-serif}
+.wrap{max-width:1500px;margin:auto;padding:20px}.hero{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:27px}.sub{color:var(--muted);margin-top:6px}.badge{padding:8px 12px;border:1px solid #2c4668;border-radius:20px;color:var(--cyan);background:#0a1b2d}
+.controls,.panel{background:rgba(14,26,43,.92);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:15px}
+.controls{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.control{display:flex;flex-direction:column;gap:5px}.control label{font-size:11px;color:var(--muted);text-transform:uppercase}
+input,select,button{background:#091525;color:var(--text);border:1px solid #2a405e;border-radius:8px;padding:9px}button{cursor:pointer;font-weight:700}button:hover{border-color:var(--cyan)}
+.btn{background:#103554}.btn.green{background:#0e4a35;border-color:#1c8f62}.btn.red{background:#4a1820;border-color:#a63a48}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}.stat b{font-size:22px;display:block}.stat span{font-size:11px;color:var(--muted)}
+.tablewrap{overflow:auto;max-height:620px}table{width:100%;border-collapse:collapse;min-width:1250px}th,td{padding:10px 8px;border-bottom:1px solid #203047;text-align:left;white-space:nowrap}th{position:sticky;top:0;background:#101e31;color:#9fb2cc;font-size:11px;text-transform:uppercase;z-index:2}tr:hover td{background:#0c1a2b}
+.score{font-weight:800}.high{color:var(--green)}.med{color:var(--yellow)}.low{color:var(--muted)}.bear{color:var(--red)}
+.signal{padding:4px 8px;border-radius:12px;font-size:11px;font-weight:800}.s-high{background:#093d2b;color:#54e49a}.s-watch{background:#403511;color:#ffd56d}.s-ignore{background:#263142;color:#aab7ca}
+.small{font-size:11px;color:var(--muted)}.footer{color:#72829a;font-size:11px;line-height:1.5}.help{display:grid;grid-template-columns:1.2fr 1fr;gap:15px}.formula{font-family:ui-monospace,monospace;background:#07111e;padding:12px;border-radius:9px;color:#b9c8db;font-size:12px;line-height:1.6}
+@media(max-width:900px){.controls,.stats{grid-template-columns:repeat(2,1fr)}.help{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}}
+
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
+.tab{background:#0b1829;border:1px solid #29415f;color:#aebed3;padding:8px 12px;border-radius:9px;font-size:12px}
+.tab.active{background:#123b5c;border-color:#38bdf8;color:#fff}
+.badge2{display:inline-block;padding:3px 7px;border-radius:10px;font-size:10px;font-weight:800}
+.bull{color:#42e69a}.bear{color:#ff6675}.neutral{color:#ffd166}
+.quality{font-weight:800}.quality.good{color:#42e69a}.quality.warn{color:#ffd166}.quality.bad{color:#ff6675}
+.flag{display:inline-block;padding:3px 6px;border-radius:8px;background:#1a2a40;color:#aebed3;margin:2px 3px 2px 0;font-size:10px}
+.flag.warn{background:#4a3b16;color:#ffd166}.flag.bad{background:#4a1820;color:#ff8892}.flag.good{background:#0b3e2c;color:#61e6a4}
+.detailgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.mini{background:#0b1728;border:1px solid #243550;border-radius:10px;padding:10px}
+.mini b{display:block;font-size:18px}.mini span{font-size:10px;color:#91a0b8}
+.sectiontitle{font-size:12px;font-weight:800;color:#9fb2cc;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px}
+.reason{padding:7px 9px;border-left:3px solid #29415f;background:#0b1728;margin:5px 0;border-radius:0 7px 7px 0}
+.reason.good{border-left-color:#28d17c}.reason.warn{border-left-color:#ffc857}.reason.bad{border-left-color:#ff5d6c}
+@media(max-width:1100px){.detailgrid{grid-template-columns:repeat(2,1fr)}}
+
+.stockLink{color:#55c7ff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;cursor:pointer}.stockLink:hover{opacity:.8}
+    
+.workspace{display:none}.workspace.active{display:block}.workspaceHeader{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;border-bottom:1px solid #263b56;padding-bottom:15px}.workspaceTitle{font-size:25px;font-weight:800}.workspaceSub{font-size:12px;color:#91a0b8;margin-top:4px}.workspaceActions{display:flex;gap:8px;flex-wrap:wrap}.uploadBox{border:1px dashed #3b5878;border-radius:11px;padding:18px;text-align:center;background:#091729}.pdfStatus{font-size:12px;margin-top:8px}.pdfText{max-height:180px;overflow:auto;white-space:pre-wrap;background:#07111f;border:1px solid #263b56;border-radius:8px;padding:10px;font-size:11px;color:#9fb2cc}.finalPage{display:none}.finalPage.active{display:block}.sourceBadge{display:inline-block;padding:4px 7px;border-radius:8px;background:#11283e;color:#73cfff;font-size:10px;font-weight:800;margin:2px}.finalGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.finalCard{background:#101f34;border:1px solid #263b56;border-radius:10px;padding:12px}.finalCard b{display:block;font-size:19px}.finalCard span{font-size:10px;color:#91a0b8}.bigScore{font-size:38px;font-weight:900;color:#55c7ff}.sourceText{font-size:12px;line-height:1.65;color:#c8d4e4;background:#0b1728;border:1px solid #263b56;border-radius:10px;padding:13px;white-space:pre-wrap}.finalNotice{font-size:11px;color:#91a0b8;margin-top:14px}@media(max-width:900px){.finalGrid{grid-template-columns:repeat(2,1fr)}}@media(max-width:550px){.finalGrid{grid-template-columns:1fr}.workspaceTitle{font-size:21px}}
+
+#analysisView{display:none}
+#analysisView .backBtn{margin-bottom:16px}
+#analysisView .top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:18px}
+#analysisView h1{font-size:28px;margin:0 0 6px}
+#analysisView .sub{color:var(--muted);font-size:13px}
+#analysisView .score{font-size:34px;font-weight:800;color:var(--cyan);text-align:right}
+#analysisView .conv{font-size:12px;font-weight:800;text-align:right}
+#analysisView .bull{color:var(--green)}
+#analysisView .bear{color:var(--red)}
+#analysisView .neutral{color:var(--yellow)}
+#analysisView .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+#analysisView .mini{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+#analysisView .mini b{display:block;font-size:20px;margin-bottom:5px}
+#analysisView .mini span{font-size:11px;color:var(--muted)}
+#analysisView .section{margin-top:20px}
+#analysisView .section h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:#a9bad0;margin:0 0 9px}
+#analysisView .formula{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px;line-height:1.75;font-size:13px}
+#analysisView .reason{padding:8px 10px;border-left:3px solid var(--line);background:var(--panel2);margin:5px 0;border-radius:0 7px 7px 0;font-size:13px}
+#analysisView .reason.good{border-left-color:var(--green)}
+#analysisView .reason.warn{border-left-color:var(--yellow)}
+#analysisView .reason.bad{border-left-color:var(--red)}
+#analysisView .flag{display:inline-block;padding:5px 8px;border-radius:8px;background:#1b2b41;color:var(--muted);margin:3px;font-size:11px}
+#analysisView .flag.good{background:#0b3e2c;color:#61e6a4}
+#analysisView .flag.warn{background:#4a3b16;color:var(--yellow)}
+#analysisView .flag.bad{background:#4a1820;color:#ff8892}
+#analysisView .notice{margin-top:20px;color:var(--muted);font-size:11px}
+@media(max-width:800px){#analysisView .grid{grid-template-columns:repeat(2,1fr)}#analysisView .top{flex-direction:column}#analysisView .score,#analysisView .conv{text-align:left}}
+@media(max-width:500px){#analysisView .grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="scannerView">
+  <div class="hero">
+    <div>
+      <h1>STWP Potential Movers Engine v3.2</h1>
+      <div class="sub">Technical structure + momentum + participation + analyst/catalyst intelligence</div>
+    </div>
+    <div class="badge">STWP RESEARCH TOOL • v3.2</div>
+  </div>
+
+  <div class="controls">
+    <div class="control"><label>Universe</label><select id="universe"><option value="all">All Imported</option><option value="fno">F&O</option><option value="nifty">Nifty / Large Cap</option></select></div>
+    <div class="control"><label>Minimum Score</label><input id="minScore" type="number" value="0" min="0" max="100"></div>
+    <div class="control"><label>Minimum Volume Ratio</label><input id="minVol" type="number" value="0" min="0" step=".1"></div>
+    <div class="control"><label>Minimum Analyst Upside %</label><input id="minUpside" type="number" value="0" step="1"></div>
+    <div class="control"><label>Direction</label><select id="direction"><option value="all">All</option><option value="bull">Bullish</option><option value="bear">Bearish</option></select></div>
+    <div class="control"><label>Search</label><input id="search" placeholder="Stock / symbol"></div>
+  </div>
+
+  <div class="controls">
+    <div class="control"><label>Load CSV</label><input id="csvFile" type="file" accept=".csv"></div>
+    <div class="control"><label>Data mode</label><select id="mode"><option value="imported">Imported CSV</option><option value="sample">Sample data</option></select></div>
+    <div class="control"><label>&nbsp;</label><button class="btn" onclick="downloadTemplate()">Download CSV Template</button></div>
+    <div class="control"><label>&nbsp;</label><button class="btn green" onclick="runScan()">RUN STWP SCAN</button></div>
+    <div class="control"><label>&nbsp;</label><button onclick="exportResults()">Export Results</button></div>
+    <div class="control"><label>&nbsp;</label><button class="btn red" onclick="resetApp()">Reset</button></div>
+  </div>
+
+  <div class="panel" id="researchPanel">
+    <h3 style="margin:0 0 5px">Manual Analyst / Research Input</h3>
+    <div class="small" style="margin-bottom:10px">
+      Enter only the analyst information visible in TradingView. Technical data comes from your Daily Calculation CSV.
+      Analyst data is stored in this page only and matched by Symbol.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:8px">
+      <input id="rSymbol" placeholder="Symbol e.g. LGEINDIA">
+      <input id="rAvg" type="number" step="0.01" placeholder="Target Average">
+      <input id="rMedian" type="number" step="0.01" placeholder="Target Median">
+      <input id="rHigh" type="number" step="0.01" placeholder="Target High">
+      <input id="rLow" type="number" step="0.01" placeholder="Target Low">
+      <input id="rStrongBuy" type="number" min="0" step="1" placeholder="Strong Buy">
+      <input id="rBuy" type="number" min="0" step="1" placeholder="Buy">
+      <input id="rHold" type="number" min="0" step="1" placeholder="Hold">
+      <input id="rSell" type="number" min="0" step="1" placeholder="Sell">
+      <input id="rStrongSell" type="number" min="0" step="1" placeholder="Strong Sell">
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onclick="saveResearch()">Save / Update Stock</button>
+      <button type="button" onclick="clearResearchForm()">Clear</button>
+      <button onclick="exportResearch()">Export Research CSV</button>
+      <button onclick="document.getElementById('researchFile').click()">Import Research CSV</button>
+      <input id="researchFile" type="file" accept=".csv,text/csv" style="display:none">
+    </div>
+    <div id="researchSaveStatus" class="small" style="margin-top:10px;font-weight:700">Analyst Research can contribute up to 15 points.</div>
+    <div id="researchList" class="small" style="margin-top:10px"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="total">0</b><span>Stocks scanned</span></div>
+    <div class="stat"><b id="high">0</b><span>High conviction</span></div>
+    <div class="stat"><b id="watch">0</b><span>Strong watch</span></div>
+    <div class="stat"><b id="avg">0</b><span>Average score</span></div>
+    <div class="stat"><b id="bulls">0</b><span>Bullish candidates</span></div>
+    <div class="stat"><b id="bears">0</b><span>Bearish candidates</span></div>
+  </div>
+
+  <div class="panel">
+    <div id="dataQuality" class="small" style="margin-bottom:10px"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="all" onclick="setTab('all')">ALL</button>
+      <button class="tab" data-tab="bull" onclick="setTab('bull')">🟢 TOP BULLISH</button>
+      <button class="tab" data-tab="bear" onclick="setTab('bear')">🔴 TOP BEARISH</button>
+      <button class="tab" data-tab="breakout" onclick="setTab('breakout')">⚡ BREAKOUT</button>
+      <button class="tab" data-tab="momentum" onclick="setTab('momentum')">🚀 MOMENTUM</button>
+      <button class="tab" data-tab="rr" onclick="setTab('rr')">🎯 BEST R:R</button>
+      <button class="tab" data-tab="developing" onclick="setTab('developing')">👀 DEVELOPING</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Rank</th><th>Stock</th><th>Score</th><th>Conviction</th><th>Direction</th><th>Price</th>
+          <th>Expected Move</th><th>Time Window</th><th>R:R</th><th>ATR</th><th>Analyst</th>
+          <th>Target Upside %</th><th>Volume</th><th>Momentum</th><th>AlphaTrend</th><th>ADX</th>
+          <th>Pivot</th><th>S1</th><th>S2</th><th>S3</th><th>R1</th><th>R2</th><th>R3</th>
+          <th>R1 Room</th><th>S1 Risk</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="analysisView"></div>
+
+
+<div id="stockWorkspace" class="workspace">
+  <div class="workspaceHeader">
+    <div><div class="workspaceTitle" id="workspaceTitle"></div><div class="workspaceSub" id="workspaceSub"></div></div>
+    <div class="workspaceActions">
+      <button onclick="backToScanner()">← BACK TO POTENTIAL MOVERS</button>
+      <button class="btn green" onclick="proceedToFinal()">PROCEED →</button>
+    </div>
+  </div>
+  <div style="margin:14px 0"><span class="sourceBadge">① CSV TECHNICALS</span><span class="sourceBadge">② MANUAL ANALYST INPUT</span><span class="sourceBadge">③ TRENDLYNE PDF</span></div>
+  <div class="panel"><h3>Technical Snapshot</h3><div id="workspaceTechnical" class="formula"></div></div>
+  <div class="panel"><h3>Analyst / Research Input</h3><div id="workspaceAnalyst" class="formula"></div></div>
+  <div class="panel"><h3>Upload Trendlyne Stock Report PDF</h3>
+    <div class="uploadBox"><b>Choose the Trendlyne PDF for this stock</b><br>
+      <input id="trendlynePdf" type="file" accept="application/pdf,.pdf" onchange="loadTrendlynePDF(this.files[0])">
+      <div id="pdfStatus" class="pdfStatus">No Trendlyne PDF uploaded.</div>
+    </div>
+    <div id="pdfPreview" class="pdfText" style="display:none;margin-top:10px"></div>
+  </div>
+  <div class="panel"><h3>Ready?</h3><div class="small">PROCEED combines CSV technicals, your analyst input and the extracted Trendlyne report context into the final STWP output.</div>
+    <div style="margin-top:10px"><button class="btn green" onclick="proceedToFinal()">PROCEED TO FINAL STWP OUTPUT →</button></div>
+  </div>
+</div>
+<div id="finalPage" class="finalPage">
+  <div class="workspaceHeader">
+    <div><div class="workspaceTitle" id="finalTitle"></div><div class="workspaceSub" id="finalSub"></div></div>
+    <div class="workspaceActions"><button onclick="backToWorkspace()">← BACK TO STOCK RESEARCH</button><button onclick="backToScanner()">← SCANNER</button></div>
+  </div>
+  <div id="finalContent"></div>
+</div>
+<div class="panel" id="detailPanel" style="display:none" style="display:none">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div>
+        <h3 id="detailTitle" style="margin:0"></h3>
+        <div class="small" id="detailSubtitle"></div>
+      </div>
+      <button onclick="closeDetail()">Close</button>
+    </div>
+    <div id="detailBody" style="margin-top:12px"></div>
+  </div>
+  <div class="footer">
+    STWP Potential Movers Engine v3.2 is an educational/research-ranking tool. It does not provide guaranteed returns, investment advice, or a prediction of exact future price/time. Analyst targets are time-horizon dependent and can be wrong. Verify data and research reports before making any decision.
+  </div>
+</div>
+
+<script>
+let imported=[];
+let results=[];
+let activeTab="all";
+
+const sample=[
+{name:"MCX",symbol:"MCX",price:3640,open:3575,high:3675,low:3558,close:3640,volume:1800000,avgvol:900000,sma20:3520,sma50:3380,sma200:2860,rsi:68,adx:29,atr:105,roc:9.2,rs:1.35,oi:8.5,upside:11.0,upgrades:2,targetups:2,catalyst:8,fnoScore:9,fno:"Bullish",catalystText:"Broker upgrade + results",support:3520,resistance:3800,range:4},
+{name:"Oil India",symbol:"OIL",price:479,open:465,high:484,low:461,close:479,volume:5200000,avgvol:2100000,sma20:454,sma50:441,sma200:405,rsi:66,adx:27,atr:13,roc:8.1,rs:1.22,oi:6.8,upside:20.0,upgrades:2,targetups:1,catalyst:8,fnoScore:8,fno:"Bullish",catalystText:"Broker upgrade + Q1 result",support:458,resistance:500,range:5},
+{name:"SBI",symbol:"SBIN",price:910,open:925,high:930,low:902,close:910,volume:42000000,avgvol:28000000,sma20:895,sma50:870,sma200:780,rsi:57,adx:22,atr:18,roc:4.0,rs:1.05,oi:-1.2,upside:12.0,upgrades:3,targetups:3,catalyst:7,fnoScore:4,fno:"Mixed",catalystText:"Multiple target upgrades",support:895,resistance:935,range:4},
+{name:"Info Edge",symbol:"NAUKRI",price:1760,open:1725,high:1788,low:1715,close:1760,volume:620000,avgvol:320000,sma20:1660,sma50:1575,sma200:1420,rsi:72,adx:32,atr:54,roc:13.0,rs:1.42,oi:11.0,upside:15.5,upgrades:3,targetups:2,catalyst:9,fnoScore:8,fno:"Bullish",catalystText:"Strong result + broker re-rating",support:1700,resistance:1850,range:3},
+{name:"Hindalco",symbol:"HINDALCO",price:690,open:702,high:708,low:684,close:690,volume:18000000,avgvol:12500000,sma20:678,sma50:660,sma200:620,rsi:59,adx:24,atr:17,roc:5.5,rs:1.08,oi:2.5,upside:14.0,upgrades:2,targetups:2,catalyst:7,fnoScore:6,fno:"Bullish",catalystText:"Broker Buy reiterations",support:675,resistance:720,range:7}
+];
+
+function n(v){return Number(v)||0}
+function scoreStock(x){
+  const p=n(x.price), sl=n(x.stoploss), hi=n(x.high), lo=n(x.low);
+  const vr=n(x.volx)>0 ? n(x.volx) : (n(x.volume)/(n(x.avgvol)||1));
+  const ch=n(x.pctchange), r=n(x.rsi), macd=n(x.macd), cci=n(x.cci), st=n(x.stoch);
+  const vwap=n(x.vwap), body=n(x.body), e9=n(x.ema9), e20=n(x.ema20), e50=n(x.ema50), e100=n(x.ema100), e200=n(x.ema200);
+  const atr=n(x.atr), adx=n(x.adx), alphaLine=n(x.alphaLine), alphaBuy=n(x.alphaBuy), atrRising=n(x.atrRising);
+
+  // 1) Trend / Market Structure — 20
+  let tech=0;
+  if(p>e9) tech+=3; if(p>e20) tech+=4; if(p>e50) tech+=4;
+  if(p>e100) tech+=3; if(p>e200) tech+=3; if(p>vwap) tech+=3;
+  if(body>=85) tech=Math.min(20,tech+2); else if(body>=70) tech=Math.min(20,tech+1);
+
+  // 2) Volume & Participation — 15
+  let vol=vr>=3?15:vr>=2?13:vr>=1.5?11:vr>=1.2?8:vr>=1?5:1;
+
+  // 3) Momentum — 15
+  let mom=0;
+  if(ch>=5) mom+=3; else if(ch>=2) mom+=2; else if(ch>0) mom+=1;
+  if(r>=55&&r<=70) mom+=3; else if(r>70&&r<=80) mom+=2; else if(r>=50) mom+=1;
+  if(macd>0) mom+=3; else if(macd>-5) mom+=1;
+  if(cci>100) mom+=2; else if(cci>0) mom+=1;
+  if(st>=70&&st<=95) mom+=2; else if(st>=50) mom+=1;
+  if(adx>=30) mom+=2; else if(adx>=20) mom+=1;
+  mom=Math.min(15,mom);
+
+  // 4) Relative Strength — 10
+  let rs=0;
+  if(ch>=3) rs+=4; else if(ch>=1) rs+=2;
+  if(p>vwap) rs+=3; if(vr>=1.5) rs+=3; rs=Math.min(10,rs);
+
+  // 5) AlphaTrend / volatility confirmation — 10
+  let alpha=0;
+  if(alphaBuy===1) alpha+=5;
+  if(alphaLine>0 && p>alphaLine) alpha+=3;
+  if(atrRising===1) alpha+=2;
+  alpha=Math.min(10,alpha);
+
+  // 6) ATR / expansion — 10
+  const atrPct=p>0 ? atr/p*100 : 0;
+  let atrScore=atrPct>=5?10:atrPct>=3?8:atrPct>=2?6:atrPct>=1?4:atrPct>0?2:0;
+  if(atrRising===1) atrScore=Math.min(10,atrScore+2);
+
+  // Structural levels.
+  const r1=n(x.r1), r2=n(x.r2), r3=n(x.r3), s1=n(x.s1), s2=n(x.s2), s3=n(x.s3);
+  const bullish=p>e20&&p>e50&&p>vwap;
+  const bearish=p<e20&&p<e50&&p<vwap;
+  const direction=bullish?"Bullish":bearish?"Bearish":"Neutral";
+
+  const upsideR1=r1>p?(r1-p)/p*100:0;
+  const upsideR2=r2>p?(r2-p)/p*100:0;
+  const downsideS1=s1>0&&s1<p?(p-s1)/p*100:0;
+  const downsideS2=s2>0&&s2<p?(p-s2)/p*100:0;
+
+  // 7) Risk / Reward — 5. Uses structural stop when available; otherwise supplied stop-loss.
+  let stop=bullish?(s1>0&&s1<p?s1:sl):(s1>0&&s1<p?s1:sl);
+  if(!stop || stop>=p) stop=sl;
+  let modelTarget=bullish ? (r2>p?r2:(r1>p?r1:p+2*atr)) : (s2>0&&s2<p?s2:(s1>0&&s1<p?s1:p-2*atr));
+  if(!modelTarget || !Number.isFinite(modelTarget)) modelTarget=p;
+  const risk=Math.abs(p-stop);
+  const reward=Math.abs(modelTarget-p);
+  const ratio=risk>0?reward/risk:0;
+  const rr=ratio>=3?5:ratio>=2?4:ratio>=1.5?3:ratio>=1?2:ratio>0?1:0;
+
+  const baseScore=Math.round(Math.min(85,tech+vol+mom+rs+alpha+atrScore+rr));
+
+  // Model expected move: 2 ATR, capped to a meaningful S/R level when available.
+  const atrMovePct=p>0&&atr>0?(2*atr/p*100):0;
+  let expectedMovePct=atrMovePct;
+  if(bullish && upsideR2>0) expectedMovePct=Math.min(atrMovePct,upsideR2);
+  if(bearish && downsideS2>0) expectedMovePct=Math.min(atrMovePct,downsideS2);
+  const expectedTarget=bullish?p*(1+expectedMovePct/100):bearish?p*(1-expectedMovePct/100):p;
+
+  // Time window model — not an exact prediction.
+  const window=(vr>=1.5&&atrRising===1)?"1–3 sessions":
+              (vr>=1.5||Math.abs(ch)>=3)?"1–5 sessions":
+              (atrPct>=2)?"3–7 sessions":"1–3 weeks";
+
+  const signal=baseScore>=75?"HIGH CONVICTION WATCH":baseScore>=65?"STRONG WATCH":baseScore>=55?"DEVELOPING":"IGNORE";
+
+  // Data completeness.
+  const checks=[
+    ["Price",p>0],["OHLC",hi>0&&lo>0],["Volume",n(x.volume)>0],["Volume Avg",n(x.avgvol)>0],
+    ["RSI",n(x.rsi)>0],["MACD",x.macd!==""],["EMA20",e20>0],["EMA50",e50>0],
+    ["VWAP",vwap>0],["ATR",atr>0],["ADX",adx>0],["Pivot",n(x.pivot)>0],
+    ["S/R",r1>0&&s1>0]
+  ];
+  const quality=Math.round(checks.filter(a=>a[1]).length/checks.length*100);
+  const missing=checks.filter(a=>!a[1]).map(a=>a[0]);
+
+  return {...x,vr,tech,vol,mom,rs,alpha,atrScore,rr,baseScore,total:baseScore,
+    bias:direction,move:expectedMovePct,expectedTarget,window,signal,
+    provisionalTarget:modelTarget,risk,ratio,stopUsed:stop,
+    r1Room:upsideR1,s1Risk:downsideS1,atrPct,
+    dataQuality:quality,dataMissing:missing};
+}
+
+let researchData={};
+
+function rv(id){ return document.getElementById(id).value.trim(); }
+function rn(id){ const v=parseFloat(document.getElementById(id).value); return Number.isFinite(v)?v:0; }
+
+function saveResearch(){
+  const s=rv("rSymbol").toUpperCase();
+  if(!s){alert("Please enter the Symbol first, e.g. LGEINDIA.");document.getElementById("rSymbol").focus();return;}
+  researchData[s]={symbol:s,avg:rn("rAvg"),median:rn("rMedian"),high:rn("rHigh"),low:rn("rLow"),
+    strongBuy:rn("rStrongBuy"),buy:rn("rBuy"),hold:rn("rHold"),sell:rn("rSell"),strongSell:rn("rStrongSell")};
+  if(results.length){
+    results=results.map(applyResearchToStock).sort((a,b)=>b.total-a.total);
+    render();
+  }
+  const r=researchData[s], stock=imported.find(x=>(x.symbol||"").toUpperCase()===s);
+  const rs=researchScore(r,stock?n(stock.price):0);
+  renderResearchList();
+  document.getElementById("researchSaveStatus").innerHTML=`<b>${s} saved — Analyst Score ${rs.score}/15 • Overall STWP Score recalculated.</b>`;
+  document.getElementById("rSymbol").style.outline="2px solid #39d98a";
+  setTimeout(()=>document.getElementById("rSymbol").style.outline="",1200);
+}
+
+function clearResearchForm(){
+  ["rSymbol","rAvg","rMedian","rHigh","rLow","rStrongBuy","rBuy","rHold","rSell","rStrongSell"]
+   .forEach(id=>{
+     const el=document.getElementById(id);
+     if(el) el.value="";
+   });
+  const status=document.getElementById("researchSaveStatus");
+  if(status) status.textContent="Research entry cleared from the form. Previously saved entries remain below.";
+}
+
+function renderResearchList(){
+  const keys=Object.keys(researchData), el=document.getElementById("researchList");
+  if(!el)return;
+  if(!keys.length){el.innerHTML="No manual research entries saved yet.";return;}
+  el.innerHTML=`<b>Saved Analyst Data</b><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">
+  ${keys.map(k=>{
+    const r=researchData[k], p=(imported.find(x=>(x.symbol||"").toUpperCase()===k)||{}).price||0, sc=researchScore(r,n(p));
+    return `<div style="padding:7px 9px;border:1px solid #27405f;border-radius:7px;background:#0b1627">
+      <b>${r.symbol}</b> • <b>${sc.score}/15</b> • ${sc.consensus}
+      <span style="margin-left:10px">Median ${r.median?fmt(r.median,2):"—"} • SB ${r.strongBuy} • B ${r.buy} • H ${r.hold} • S ${r.sell} • SS ${r.strongSell}</span>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function researchScore(r,p){
+  if(!r) return {score:0,upside:0,medianUp:0,highUp:0,lowDown:0,consensus:"Not entered",consensusStrength:0};
+  const medianUp=r.median>0&&p>0?(r.median-p)/p*100:0;
+  const avgUp=r.avg>0&&p>0?(r.avg-p)/p*100:0;
+  const highUp=r.high>0&&p>0?(r.high-p)/p*100:0;
+  const lowDown=r.low>0&&p>0?(r.low-p)/p*100:0;
+  const totalRecs=r.strongBuy+r.buy+r.hold+r.sell+r.strongSell;
+  const positive=r.strongBuy+r.buy, negative=r.sell+r.strongSell;
+  const net=totalRecs?((positive-negative)/totalRecs):0;
+  const consensusStrength=totalRecs?Math.round(Math.max(0,Math.min(100,(net+1)/2*100))):0;
+  let consensus="Not entered";
+  if(totalRecs){
+    if(positive/totalRecs>=.75) consensus="Strong Bullish";
+    else if(positive/totalRecs>=.55) consensus="Bullish";
+    else if(negative/totalRecs>=.55) consensus="Bearish";
+    else if(negative/totalRecs>=.75) consensus="Strong Bearish";
+    else consensus="Mixed";
+  }
+  let recScore=totalRecs?Math.max(0,Math.min(8,(positive/totalRecs*8)-(negative/totalRecs*4))):0;
+  let targetScore=medianUp>=15?7:medianUp>=10?6:medianUp>=7?5:medianUp>=5?4:medianUp>=3?3:medianUp>0?2:medianUp>-5?1:0;
+  const score=Math.round(Math.max(0,Math.min(15,recScore+targetScore)));
+  return {score,upside:avgUp,medianUp,highUp,lowDown,recScore,targetScore,consensus,consensusStrength};
+}
+
+function applyResearchToStock(x){
+  const fresh=scoreStock(x);
+  const r=researchData[(fresh.symbol||"").toUpperCase()];
+  const rs=researchScore(r,n(fresh.price));
+  fresh.research=r||null;
+  fresh.researchScore=rs.score;
+  fresh.analyst=rs.score;
+  fresh.upside=rs.upside;
+  fresh.medianUp=rs.medianUp;
+  fresh.highUp=rs.highUp;
+  fresh.lowDown=rs.lowDown;
+  fresh.consensus=rs.consensus;
+  fresh.consensusStrength=rs.consensusStrength;
+  fresh.targetUpside = r
+    ? (rs.medianUp!==0 ? rs.medianUp : rs.upside)
+    : n(fresh.csvTargetUpside);
+  fresh.total=Math.min(100,Math.round(fresh.baseScore+rs.score));
+  fresh.signal=fresh.total>=80?"HIGH CONVICTION WATCH":fresh.total>=70?"STRONG WATCH":fresh.total>=60?"DEVELOPING":"IGNORE";
+  fresh.analystStatus=r ? "ENTERED" : "NOT ENTERED";
+  fresh.conviction=convictionFor(fresh);
+  fresh.flags=buildFlags(fresh);
+  return fresh;
+}
+
+function convictionFor(x){
+  const score=n(x.total), q=n(x.dataQuality), agreement=signalAgreement(x);
+  if(score>=80&&q>=85&&agreement>=70)return "HIGH";
+  if(score>=70&&q>=75&&agreement>=55)return "STRONG";
+  if(score>=60&&q>=65)return "DEVELOPING";
+  return "WATCH";
+}
+function signalAgreement(x){
+  let pos=0,neg=0;
+  if(x.price>x.ema20)pos++;else if(x.price<x.ema20)neg++;
+  if(x.price>x.ema50)pos++;else if(x.price<x.ema50)neg++;
+  if(x.price>x.vwap)pos++;else if(x.price<x.vwap)neg++;
+  if(x.rsi>=50)pos++;else neg++;
+  if(x.macd>0)pos++;else neg++;
+  if(x.cci>0)pos++;else neg++;
+  if(x.alphaLine>0){if(x.price>x.alphaLine)pos++;else neg++;}
+  return Math.round(Math.max(pos,neg)/7*100);
+}
+function buildFlags(x){
+  const f=[];
+  if(x.rsi>=75)f.push({t:"RSI overbought",c:"warn"});
+  if(x.rsi<=25)f.push({t:"RSI oversold",c:"good"});
+  if(x.r1>0&&x.r1>x.price&&x.r1/x.price-1<.015)f.push({t:"R1 very close",c:"warn"});
+  if(x.s1>0&&x.s1<x.price&&(x.price-x.s1)/x.price<.02)f.push({t:"S1 close",c:"warn"});
+  if(x.vr>=2)f.push({t:"Volume expansion",c:"good"});
+  if(x.atrRising===1)f.push({t:"ATR rising",c:"good"});
+  if(x.bias==="Bullish"&&x.macd<0)f.push({t:"Bullish structure / negative MACD",c:"warn"});
+  if(x.bias==="Bearish"&&x.macd>0)f.push({t:"Bearish structure / positive MACD",c:"warn"});
+  if(x.bias==="Bullish"&&x.r1>0&&x.r1>x.price&&x.r1/x.price-1<Math.max(.02,x.atrPct/100))f.push({t:"Limited immediate upside",c:"warn"});
+  if(x.dataMissing.length)f.push({t:"Missing: "+x.dataMissing.slice(0,3).join(", "),c:"bad"});
+  return f;
+}
+function tabFilter(x){
+  switch(activeTab){
+    case "bull":return x.bias==="Bullish";
+    case "bear":return x.bias==="Bearish";
+    case "breakout":return (x.bias==="Bullish"&&x.r1>0&&x.r1>x.price&&(x.r1-x.price)/x.price<=Math.max(.03,x.atrPct/100)&&x.vr>=1.2);
+    case "momentum":return x.mom>=10&&x.vr>=1.2;
+    case "rr":return x.ratio>=2;
+    case "developing":return x.total>=55&&x.total<70;
+    default:return true;
+  }
+}
+function setTab(t){
+  activeTab=t;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  render();
+}
+function consensusLabel(x){
+  return x.research ? `${x.consensus} (${x.consensusStrength}/100)` : "Not entered";
+}
+function scoreBand(x){return x.total>=80?"high":x.total>=70?"med":"low"}
+function fmt(v,d=2){return n(v).toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function runScan(){
+  const mode=document.getElementById("mode").value;
+  if(mode==="imported"&&imported.length===0){alert("Please choose your Daily Calculation CSV first.");return;}
+  const data=mode==="imported"?imported:sample;
+  const minScore=Number(document.getElementById("minScore").value)||0;
+  const minVol=Number(document.getElementById("minVol").value)||0;
+  const minUpside=Number(document.getElementById("minUpside").value)||0;
+  const direction=document.getElementById("direction").value;
+  const universe=document.getElementById("universe").value;
+  const q=(document.getElementById("search").value||"").toLowerCase().trim();
+
+  results=data.map(applyResearchToStock).filter(x=>{
+    const directionOK=direction==="all"||(direction==="bull"&&x.bias==="Bullish")||(direction==="bear"&&x.bias==="Bearish");
+    const analystOK=!x.research||x.medianUp>=minUpside;
+    const searchOK=!q||`${x.symbol} ${x.name} ${x.sector}`.toLowerCase().includes(q);
+    const universeOK=universe==="all"||(universe==="fno"&&n(x.fnoLotsize)>0)||(universe==="nifty"&&/largecap/i.test(x.marketcap||""));
+    return x.total>=minScore&&x.vr>=minVol&&analystOK&&directionOK&&searchOK&&universeOK;
+  }).sort((a,b)=>b.total-a.total);
+  activeTab="all";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab==="all"));
+  render();
+}
+
+function refreshResearchScoresOnly(){
+  if(!results.length)return;
+  results=results.map(applyResearchToStock).sort((a,b)=>b.total-a.total);
+  render();
+}
+
+function render(){
+  const body=document.getElementById("rows"); body.innerHTML="";
+  const view=results.filter(tabFilter);
+  view.forEach((x,i)=>{
+    const cls=scoreBand(x);
+    const dirCls=x.bias==="Bullish"?"bull":x.bias==="Bearish"?"bear":"neutral";
+    const convCls=x.conviction==="HIGH"?"high":x.conviction==="STRONG"?"med":"low";
+    const analyst=x.research?`${x.analyst}/15`:"0/15";
+    body.innerHTML+=`<tr title="Open full STWP analysis">
+      <td>${i+1}</td>
+      <td><a href="#" class="stockLink" onclick="event.preventDefault(); openStockWorkspace('${String(x.symbol).replace(/'/g,"\\'")}')" title="Open ${x.symbol} analysis"><b>${x.symbol}</b></a><br><span class="small">${x.name}</span></td>
+      <td class="score ${cls}">${x.total}</td>
+      <td><span class="badge2 ${convCls}">${x.conviction}</span></td>
+      <td class="${dirCls}"><b>${x.bias}</b></td>
+      <td>₹${fmt(x.price,2)}</td>
+      <td>${x.move.toFixed(1)}%<br><span class="small">to ₹${fmt(x.expectedTarget,0)}</span></td>
+      <td>${x.window}</td>
+      <td>${x.ratio>0?x.ratio.toFixed(2)+"×":"—"}</td>
+      <td>₹${fmt(x.atr,2)}</td>
+      <td>${analyst}<br><span class="small">${x.consensus}</span></td>
+      <td>${Number.isFinite(n(x.targetUpside)) && (x.targetUpside!==0 || x.research || n(x.csvTargetUpside)!==0) ? x.targetUpside.toFixed(1)+"%" : "—"}</td>
+      <td>${x.vol}/15<br><span class="small">${x.vr.toFixed(2)}×</span></td>
+      <td>${x.mom}/15</td>
+      <td>${x.alpha}/10</td>
+      <td>${fmt(x.adx,1)}</td>
+      <td>₹${fmt(x.pivot,2)}</td><td>₹${fmt(x.s1,2)}</td><td>₹${fmt(x.s2,2)}</td><td>₹${fmt(x.s3,2)}</td>
+      <td>₹${fmt(x.r1,2)}</td><td>₹${fmt(x.r2,2)}</td><td>₹${fmt(x.r3,2)}</td>
+      <td>${x.r1Room>0?x.r1Room.toFixed(1)+"%":"—"}</td>
+      <td>${x.s1Risk>0?x.s1Risk.toFixed(1)+"%":"—"}</td>
+      <td class="quality ${x.dataQuality>=85?"good":x.dataQuality>=70?"warn":"bad"}">${x.dataQuality}%</td>
+    </tr>`;
+  });
+  document.getElementById("total").textContent=results.length;
+  document.getElementById("high").textContent=results.filter(x=>x.conviction==="HIGH").length;
+  document.getElementById("watch").textContent=results.filter(x=>x.total>=70&&x.total<80).length;
+  document.getElementById("avg").textContent=results.length?Math.round(results.reduce((a,b)=>a+b.total,0)/results.length):0;
+  document.getElementById("bulls").textContent=results.filter(x=>x.bias==="Bullish").length;
+  document.getElementById("bears").textContent=results.filter(x=>x.bias==="Bearish").length;
+
+  const q=results.length?Math.round(results.reduce((a,b)=>a+b.dataQuality,0)/results.length):0;
+  const qEl=document.getElementById("dataQuality");
+  if(qEl) qEl.innerHTML=`<span class="quality ${q>=85?"good":q>=70?"warn":"bad"}">Data Quality: ${q}%</span> • Showing ${view.length} of ${results.length} scanned stocks • Click any row for full reasoning`;
+}
+
+function openStockWorkspace(symbol){
+  const x=results.find(a=>(a.symbol||"").toUpperCase()===String(symbol).toUpperCase());
+  if(!x)return;
+
+  const risk=n(x.risk), reward=Math.abs(n(x.provisionalTarget)-n(x.price));
+  const flags=x.flags||[];
+  const reasons=[];
+  if(x.tech>=15) reasons.push(["Price structure is aligned with the major EMA/VWAP framework.","good"]);
+  else if(x.tech>=10) reasons.push(["Price structure has partial trend alignment.",""]);
+  if(x.vr>=1.5) reasons.push([`Volume is ${x.vr.toFixed(2)}× the 20-day average, showing strong participation.`,"good"]);
+  if(x.mom>=10) reasons.push(["Momentum conditions are supportive.","good"]);
+  if(x.alpha>=7) reasons.push(["AlphaTrend / volatility confirmation is supportive.","good"]);
+  if(x.adx>=25) reasons.push([`ADX ${fmt(x.adx,1)} indicates meaningful trend strength.`,"good"]);
+  if(x.r1Room>=5) reasons.push([`There is ${x.r1Room.toFixed(1)}% room to R1 based on the supplied level.`,"good"]);
+  if(x.research) reasons.push([`Analyst consensus is ${x.consensus} with ${x.consensusStrength}/100 consensus strength.`,"good"]);
+  if(x.ratio>=2) reasons.push([`Model reward/risk is ${x.ratio.toFixed(2)}×.`,"good"]);
+
+  const reasonHtml=reasons.length?reasons.map(r=>`<div class="reason ${r[1]}">• ${r[0]}</div>`).join(""):"<div class='reason'>• No dominant confirmation.</div>";
+  const flagHtml=flags.length?flags.map(f=>`<span class="flag ${f.c}">${f.t}</span>`).join(""):"<span class='flag good'>No major model conflict detected</span>";
+  const analystHtml=x.research?`
+      <div class="formula">
+        <b>Consensus: ${x.consensus}</b> • Strength ${x.consensusStrength}/100<br>
+        Analyst Score: <b>${x.analyst}/15</b><br><br>
+        Average Target: ₹${fmt(x.research.avg,2)} (${x.upside.toFixed(1)}%)<br>
+        Median Target: ₹${fmt(x.research.median,2)} (${x.medianUp.toFixed(1)}%)<br>
+        Highest Target: ₹${fmt(x.research.high,2)} (${x.highUp.toFixed(1)}%)<br>
+        Lowest Target: ₹${fmt(x.research.low,2)} (${x.lowDown.toFixed(1)}%)<br><br>
+        <b>Target Upside Used: ${x.targetUpside.toFixed(1)}%</b><br><br>
+        Strong Buy / Buy / Hold / Sell / Strong Sell:<br>
+        ${x.research.strongBuy} / ${x.research.buy} / ${x.research.hold} / ${x.research.sell} / ${x.research.strongSell}
+      </div>`:
+      `<div class="formula">No analyst data entered. The model does not invent research calls.</div>`;
+
+  document.getElementById("analysisView").innerHTML=`
+  <button class="btn backBtn" onclick="closeStockAnalysis()">← BACK TO POTENTIAL MOVERS</button>
+  <div class="top">
+    <div><h1>${x.symbol} — STWP Potential Movers Analysis</h1><div class="sub">${x.name||""} • ${x.bias} • ${x.window}</div></div>
+    <div><div class="score">${x.total}/100</div><div class="conv ${x.bias==="Bullish"?"bull":x.bias==="Bearish"?"bear":"neutral"}">${x.conviction} CONVICTION • ${x.bias.toUpperCase()}</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="mini"><b>${x.move.toFixed(1)}%</b><span>Expected Move</span></div>
+    <div class="mini"><b>₹${fmt(x.expectedTarget,2)}</b><span>Model Expected Price</span></div>
+    <div class="mini"><b>${x.ratio>0?x.ratio.toFixed(2)+"×":"—"}</b><span>Risk / Reward</span></div>
+    <div class="mini"><b>₹${fmt(x.atr,2)}</b><span>ATR(14)</span></div>
+    <div class="mini"><b>${x.targetUpside!==0?x.targetUpside.toFixed(1)+"%":"—"}</b><span>Target Upside</span></div>
+    <div class="mini"><b>${x.r1Room>0?x.r1Room.toFixed(1)+"%":"—"}</b><span>Room to R1</span></div>
+    <div class="mini"><b>${x.s1Risk>0?x.s1Risk.toFixed(1)+"%":"—"}</b><span>Risk to S1</span></div>
+    <div class="mini"><b>${x.dataQuality}%</b><span>Data Quality</span></div>
+  </div>
+
+  <div class="section"><h2>1. Why it ranked</h2>${reasonHtml}</div>
+
+  <div class="section"><h2>2. Risk flags / conflicts</h2>${flagHtml}</div>
+
+  <div class="section"><h2>3. Expected move & timing</h2>
+    <div class="formula">Direction: <b>${x.bias}</b><br>
+    Current Price: ₹${fmt(x.price,2)}<br>
+    ATR(14): ₹${fmt(x.atr,2)} (${x.atrPct.toFixed(2)}%)<br>
+    Model Expected Move: ${x.move.toFixed(1)}%<br>
+    Model Expected Price: ₹${fmt(x.expectedTarget,2)}<br>
+    Time Window: ${x.window}<br>
+    <span style="color:var(--muted)">This is an ATR/SR-based probability model, not an exact time or price prediction.</span></div>
+  </div>
+
+  <div class="section"><h2>4. Support / Resistance Map</h2>
+    <div class="formula">Pivot: ₹${fmt(x.pivot,2)}<br>
+    Support: S1 ₹${fmt(x.s1,2)} • S2 ₹${fmt(x.s2,2)} • S3 ₹${fmt(x.s3,2)}<br>
+    Resistance: R1 ₹${fmt(x.r1,2)} • R2 ₹${fmt(x.r2,2)} • R3 ₹${fmt(x.r3,2)}<br>
+    Upside room to R1: ${x.r1Room>0?x.r1Room.toFixed(1)+"%":"—"}<br>
+    Downside to S1: ${x.s1Risk>0?x.s1Risk.toFixed(1)+"%":"—"}</div>
+  </div>
+
+  <div class="section"><h2>5. Analyst Consensus</h2>${analystHtml}</div>
+
+  <div class="section"><h2>6. Score Breakdown</h2>
+    <div class="formula">
+      Trend / Structure: ${x.tech}/20<br>
+      Volume / Participation: ${x.vol}/15<br>
+      Momentum: ${x.mom}/15<br>
+      Relative Strength: ${x.rs}/10<br>
+      AlphaTrend / Confirmation: ${x.alpha}/10<br>
+      ATR / Expansion: ${x.atrScore}/10<br>
+      Risk / Reward: ${x.rr}/5<br>
+      Analyst Research: ${x.analyst}/15<br>
+      <b>COMBINED TOTAL: ${x.total}/100</b>
+    </div>
+  </div>
+
+  <div class="section"><h2>7. Data Quality</h2>
+    <div class="formula"><b>${x.dataQuality}%</b><br>${x.dataMissing.length?`Missing / incomplete: ${x.dataMissing.join(", ")}`:"Core model inputs are present."}</div>
+  </div>
+  <div class="notice">STWP Potential Movers Engine is an educational/research-ranking tool. Expected moves and time windows are model estimates, not guarantees.</div>
+  <button class="btn backBtn" style="margin-top:18px" onclick="closeStockAnalysis()">← BACK TO POTENTIAL MOVERS</button>
+  `;
+
+  document.getElementById("scannerView").style.display="none";
+  document.getElementById("analysisView").style.display="block";
+  window.scrollTo(0,0);
+}
+
+function closeStockAnalysis(){
+  document.getElementById("analysisView").style.display="none";
+  document.getElementById("analysisView").innerHTML="";
+  document.getElementById("scannerView").style.display="";
+  window.scrollTo(0,0);
+}
+
+
+let activeStockSymbol="",trendlyneText="",trendlyneFileName="";
+
+
+function backToScanner(){document.getElementById("stockWorkspace").classList.remove("active");document.getElementById("finalPage").classList.remove("active");window.scrollTo(0,0)}
+function backToWorkspace(){document.getElementById("finalPage").classList.remove("active");document.getElementById("stockWorkspace").classList.add("active");window.scrollTo(0,0)}
+
+async function loadTrendlynePDF(file){
+  if(!file)return;
+  trendlyneFileName=file.name;
+  const status=document.getElementById("pdfStatus");
+  status.textContent=`Reading ${file.name}…`;
+  try{
+    const pdfjs=window.pdfjsLib || await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+    const pdf=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
+    let pages=[];
+    for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const c=await page.getTextContent();pages.push(`--- Page ${i} ---\n${c.items.map(a=>a.str).join(" ")}`)}
+    trendlyneText=pages.join("\n");
+    status.textContent=`✓ ${file.name} • ${pdf.numPages} pages • ${trendlyneText.length.toLocaleString("en-IN")} characters extracted`;
+    const preview=document.getElementById("pdfPreview");preview.style.display="block";preview.textContent=trendlyneText.slice(0,5000);
+  }catch(e){console.error(e);trendlyneText="";status.textContent="Could not read PDF. It may be scanned/image-only or PDF reading was blocked.";alert("PDF text could not be extracted. A text-based PDF works best.")}
+}
+
+function trendlyneHighlights(text){
+  if(!text)return "No Trendlyne PDF uploaded.";
+  const clean=text.replace(/\s+/g," ").trim();
+  const keys=["revenue","profit","sales","ebitda","margin","eps","valuation","roe","roce","debt","promoter","shareholding","mutual fund","fii","dii","quarter","results","risk","technical","target","recommendation"];
+  const out=[];
+  keys.forEach(k=>{const i=clean.toLowerCase().indexOf(k);if(i>=0)out.push(`${k.toUpperCase()}: ${clean.slice(Math.max(0,i-180),Math.min(clean.length,i+520))}`)});
+  return `REPORT SUMMARY:\n${clean.slice(0,2500)}\n\nKEY EXTRACTS:\n${out.slice(0,12).join("\n\n")}`;
+}
+
+function proceedToFinal(){
+  const x=results.find(a=>(a.symbol||"").toUpperCase()===String(activeStockSymbol).toUpperCase());
+  if(!x)return;
+  if(!trendlyneText&&!confirm("No Trendlyne PDF uploaded. Proceed with CSV + analyst data only?"))return;
+  document.getElementById("stockWorkspace").classList.remove("active");
+  document.getElementById("finalPage").classList.add("active");
+  document.getElementById("finalTitle").textContent=`${x.symbol} — FINAL STWP ANALYSIS`;
+  document.getElementById("finalSub").textContent=`${x.name||""} • ${x.bias} • ${x.conviction} CONVICTION • ${x.total}/100`;
+  const flags=x.flags||[];
+  document.getElementById("finalContent").innerHTML=`
+  <div class="finalHero" style="margin-top:18px"><div style="display:flex;justify-content:space-between;gap:15px"><div><h2>${x.bias} • ${x.conviction} CONVICTION</h2><div class="small">Combined technical, analyst and Trendlyne research context.</div></div><div class="bigScore">${x.total}/100</div></div></div>
+  <div class="finalGrid">
+    <div class="finalCard"><b>${x.move.toFixed(1)}%</b><span>Expected Move</span></div><div class="finalCard"><b>₹${fmt(x.expectedTarget,2)}</b><span>Model Expected Price</span></div>
+    <div class="finalCard"><b>${x.window}</b><span>Time Window</span></div><div class="finalCard"><b>${x.ratio>0?x.ratio.toFixed(2)+"×":"—"}</b><span>Risk / Reward</span></div>
+    <div class="finalCard"><b>${x.targetUpside?x.targetUpside.toFixed(1)+"%":"—"}</b><span>Analyst Target Upside</span></div><div class="finalCard"><b>₹${fmt(x.atr,2)}</b><span>ATR</span></div>
+    <div class="finalCard"><b>₹${fmt(x.r1,2)}</b><span>R1</span></div><div class="finalCard"><b>₹${fmt(x.s1,2)}</b><span>S1</span></div>
+  </div>
+  <div class="section"><h2>Technical Conclusion</h2><div class="sourceText">Price ₹${fmt(x.price,2)} • ${x.bias} • RSI ${fmt(x.rsi,1)} • ADX ${fmt(x.adx,1)} • Volume ${fmt(x.vr,2)}× • ATR ₹${fmt(x.atr,2)}
+Support: S1 ₹${fmt(x.s1,2)} • S2 ₹${fmt(x.s2,2)} • S3 ₹${fmt(x.s3,2)}
+Resistance: R1 ₹${fmt(x.r1,2)} • R2 ₹${fmt(x.r2,2)} • R3 ₹${fmt(x.r3,2)}</div></div>
+  <div class="section"><h2>Analyst / Research</h2><div class="sourceText">${x.research?`Consensus: ${x.consensus} (${x.consensusStrength}/100)
+Average ₹${fmt(x.research.avg,2)} (${x.upside.toFixed(1)}%)
+Median ₹${fmt(x.research.median,2)} (${x.medianUp.toFixed(1)}%)
+Highest ₹${fmt(x.research.high,2)} (${x.highUp.toFixed(1)}%)
+Lowest ₹${fmt(x.research.low,2)} (${x.lowDown.toFixed(1)}%)
+Strong Buy / Buy / Hold / Sell / Strong Sell: ${x.research.strongBuy} / ${x.research.buy} / ${x.research.hold} / ${x.research.sell} / ${x.research.strongSell}`:"No analyst input."}</div></div>
+  <div class="section"><h2>Trendlyne Research Context</h2><div class="sourceText"><b>${trendlyneFileName||"Not uploaded"}</b>\n\n${trendlyneHighlights(trendlyneText)}</div></div>
+  <div class="section"><h2>Risk Flags</h2><div>${flags.length?flags.map(f=>`<span class="flag ${f.c}">${f.t}</span>`).join(""):"<span class='flag good'>No major model conflict detected</span>"}</div></div>
+  <div class="section"><h2>STWP Final Assessment</h2><div class="sourceText">${x.symbol} has a ${x.bias.toLowerCase()} technical profile with a ${x.total}/100 STWP score and ${x.conviction.toLowerCase()} conviction. The model estimates a ${x.move.toFixed(1)}% move over ${x.window}. ${x.research?`Analyst consensus is ${x.consensus}, with median target upside of ${x.medianUp.toFixed(1)}%. `:""}${trendlyneText?"The uploaded Trendlyne report has been included as research context. Review the original PDF before relying on any extracted statement.":"No Trendlyne report was uploaded."}</div></div>
+  <div class="finalNotice">Educational/research-ranking tool. Expected moves and time windows are model estimates, not guarantees.</div>`;
+  window.scrollTo(0,0);
+}
+
+
+
+
+
+
+
+
+
+function showDetail(i){
+  const x=results[i]; if(!x)return; showDetailObject(x);
+}
+function showDetailBySymbol(s){
+  const x=results.find(a=>(a.symbol||"").toUpperCase()===String(s).toUpperCase());
+  if(x)showDetailObject(x);
+}
+function showDetailObject(x){
+  const risk=n(x.risk), reward=Math.abs(n(x.provisionalTarget)-n(x.price)), rr=n(x.ratio);
+  const flags=x.flags||[];
+  const reasons=[];
+  if(x.tech>=15) reasons.push({t:"Price structure is aligned with the major EMA/VWAP framework.",c:"good"});
+  else if(x.tech>=10) reasons.push({t:"Price structure has partial trend alignment.",c:""});
+  if(x.vr>=1.5) reasons.push({t:`Volume is ${x.vr.toFixed(2)}× the 20-day average, showing strong participation.`,c:"good"});
+  if(x.mom>=10) reasons.push({t:"Momentum conditions are supportive.",c:"good"});
+  if(x.alpha>=7) reasons.push({t:"AlphaTrend / volatility confirmation is supportive.",c:"good"});
+  if(x.adx>=25) reasons.push({t:`ADX ${fmt(x.adx,1)} indicates meaningful trend strength.`,c:"good"});
+  if(x.r1Room>=5) reasons.push({t:`There is ${x.r1Room.toFixed(1)}% room to R1 based on the supplied level.`,c:"good"});
+  if(x.research) reasons.push({t:`Analyst consensus is ${x.consensus} with ${x.consensusStrength}/100 consensus strength.`,c:"good"});
+  if(x.ratio>=2) reasons.push({t:`Model reward/risk is ${x.ratio.toFixed(2)}×.`,c:"good"});
+
+  document.getElementById("detailPanel").style.display="block";
+  document.getElementById("detailTitle").textContent=`${x.symbol} — STWP Potential Movers Analysis`;
+  document.getElementById("detailSubtitle").textContent=`${x.name} • ${x.bias} • Score ${x.total}/100 • ${x.conviction} CONVICTION`;
+
+  document.getElementById("detailBody").innerHTML=`
+    <div class="detailgrid">
+      <div class="mini"><b>${x.total}/100</b><span>STWP Score</span></div>
+      <div class="mini"><b>${x.move.toFixed(1)}%</b><span>Expected ATR Move</span></div>
+      <div class="mini"><b>${x.window}</b><span>Model Time Window</span></div>
+      <div class="mini"><b>${x.ratio>0?x.ratio.toFixed(2)+"×":"—"}</b><span>Risk / Reward</span></div>
+      <div class="mini"><b>₹${fmt(x.atr,2)}</b><span>ATR(14)</span></div>
+      <div class="mini"><b>${x.conviction}</b><span>Conviction</span></div>
+      <div class="mini"><b>${x.dataQuality}%</b><span>Data Quality</span></div>
+      <div class="mini"><b>${x.research?x.analyst+"/15":"0/15"}</b><span>Analyst Research</span></div>
+    </div>
+
+    <div class="sectiontitle">1. Why it ranked</div>
+    <div>${reasons.length?reasons.map(r=>`<div class="reason ${r.c}">• ${r.t}</div>`).join(""):"<div class='reason'>• No dominant confirmation.</div>"}</div>
+
+    <div class="sectiontitle">2. Risk flags / conflicts</div>
+    <div>${flags.length?flags.map(f=>`<span class="flag ${f.c}">${f.t}</span>`).join(""):"<span class='flag good'>No major model conflict detected</span>"}</div>
+
+    <div class="sectiontitle">3. Expected move & timing</div>
+    <div class="formula">
+      Direction: <b>${x.bias}</b><br>
+      Current Price: ₹${fmt(x.price,2)}<br>
+      ATR(14): ₹${fmt(x.atr,2)} (${x.atrPct.toFixed(2)}%)<br>
+      Model Expected Move: ${x.move.toFixed(1)}%<br>
+      Model Expected Price: ₹${fmt(x.expectedTarget,2)}<br>
+      Time Window: ${x.window}<br>
+      <span class="small">This is an ATR/SR-based probability model, not an exact time or price prediction.</span>
+    </div>
+
+    <div class="sectiontitle">4. Support / Resistance map</div>
+    <div class="formula">
+      Pivot: ₹${fmt(x.pivot,2)}<br>
+      Support: S1 ₹${fmt(x.s1,2)} • S2 ₹${fmt(x.s2,2)} • S3 ₹${fmt(x.s3,2)}<br>
+      Resistance: R1 ₹${fmt(x.r1,2)} • R2 ₹${fmt(x.r2,2)} • R3 ₹${fmt(x.r3,2)}<br>
+      Upside room to R1: ${x.r1Room>0?x.r1Room.toFixed(1)+"%":"—"}<br>
+      Downside to S1: ${x.s1Risk>0?x.s1Risk.toFixed(1)+"%":"—"}
+    </div>
+
+    <div class="sectiontitle">5. Analyst consensus</div>
+    <div class="formula">${x.research?`
+      Consensus: <b>${x.consensus}</b> • Strength ${x.consensusStrength}/100<br>
+      Analyst Score: <b>${x.analyst}/15</b><br>
+      Target Upside used by model: <b>${x.targetUpside.toFixed(1)}%</b><br>
+      Average target: ₹${fmt(x.research.avg,2)} (${x.upside.toFixed(1)}%)<br>
+      Median target: ₹${fmt(x.research.median,2)} (${x.medianUp.toFixed(1)}%)<br>
+      High target: ₹${fmt(x.research.high,2)} (${x.highUp.toFixed(1)}%)<br>
+      Low target: ₹${fmt(x.research.low,2)} (${x.lowDown.toFixed(1)}%)<br>
+      Strong Buy / Buy / Hold / Sell / Strong Sell: ${x.research.strongBuy} / ${x.research.buy} / ${x.research.hold} / ${x.research.sell} / ${x.research.strongSell}
+    `:"No analyst data entered. The model does not invent research calls."}</div>
+
+    <div class="sectiontitle">6. Score breakdown</div>
+    <div class="formula">
+      Trend / Structure: ${x.tech}/20<br>
+      Volume / Participation: ${x.vol}/15<br>
+      Momentum: ${x.mom}/15<br>
+      Relative Strength: ${x.rs}/10<br>
+      AlphaTrend / Confirmation: ${x.alpha}/10<br>
+      ATR / Expansion: ${x.atrScore}/10<br>
+      Risk / Reward: ${x.rr}/5<br>
+      Analyst Research: ${x.analyst}/15<br>
+      <b>COMBINED TOTAL: ${x.total}/100</b>
+    </div>
+
+    <div class="sectiontitle">7. Data quality</div>
+    <div class="formula">
+      Data Quality: <b>${x.dataQuality}%</b><br>
+      ${x.dataMissing.length?`Missing / incomplete: ${x.dataMissing.join(", ")}`:"Core model inputs are present."}
+    </div>
+  `;
+  document.getElementById("detailPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function closeDetail(){document.getElementById("detailPanel").style.display="none"}
+
+function parseCSV(text){
+  const rows=[];
+  let row=[], field="", quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], next=text[i+1];
+    if(c==='"'){
+      if(quoted && next==='"'){ field+='"'; i++; }
+      else quoted=!quoted;
+    } else if(c===',' && !quoted){
+      row.push(field); field="";
+    } else if((c==='\n'||c==='\r') && !quoted){
+      if(c==='\r' && next==='\n') i++;
+      row.push(field); field="";
+      if(row.some(v=>v.trim()!=="")) rows.push(row);
+      row=[];
+    } else field+=c;
+  }
+  if(field!=="" || row.length){ row.push(field); if(row.some(v=>v.trim()!=="")) rows.push(row); }
+  if(rows.length<2) return [];
+
+  const headers=rows[0].map(x=>normalize(x));
+  return rows.slice(1).map(vals=>{
+    const o={};
+    headers.forEach((h,i)=>o[h]=(vals[i]??"").trim());
+    return mapRow(o);
+  }).filter(x=>x.symbol);
+}
+
+function normalize(h){return h.replace(/[^a-zA-Z0-9]/g,"").toLowerCase()}
+function mapRow(o){
+  return {
+    date:o.date||"", name:o.name||o.symbol, symbol:o.symbol||"",
+    price:n(o.close), open:n(o.open), high:n(o.high), low:n(o.low), close:n(o.close),
+    volume:n(o.volume), avgvol:n(o.volume20sma), pctchange:n(o.change||o.pctchange), volx:n(o.volx), fnoLotsize:n(o.fnolotsize),
+    csvTargetUpside:n(o.analystupsidepct||o.targetupside||o.upside),
+    sector:o.sector||"", marketcap:o.marketcapname||"", stoploss:n(o.stoploss),
+    rsi:n(o.rsi), macd:n(o.macd), cci:n(o.cci), stoch:n(o.stochastic), vwap:n(o.vwap),
+    body:n(o.candlebodystrength), ema9:n(o.ema9), ema20:n(o.ema20), ema50:n(o.ema50),
+    ema100:n(o.ema100), ema200:n(o.ema200),
+    atr:(n(o.avg_truerange)||n(o.atr14)||n(o.atr)||Math.abs(n(o.high)-n(o.low))), adx:n(o.adx),
+    alphaBuy:n(o.alphatrendbuymarker), alphaLine:n(o.alphatrendline),
+    atrRising:n(o["100bullatrrising"]),
+    // Exact Daily Calculation / Excel column names: P, R1, R2, R3, S1, S2, S3.
+    // Also accept the older Chartink Pivot_point_* names.
+    pivot:(n(o.p)||n(o.pivotpoint)),
+    r1:(n(o.r1)||n(o.pivotpointr1)),
+    r2:(n(o.r2)||n(o.pivotpointr2)),
+    r3:(n(o.r3)||n(o.pivotpointr3)),
+    s1:(n(o.s1)||n(o.pivotpoints1)),
+    s2:(n(o.s2)||n(o.pivotpoints2)),
+    s3:(n(o.s3)||n(o.pivotpoints3)),
+    upside:0, upgrades:0, targetups:0, catalyst:0, fnoScore:0, fno:"",
+    catalystText:"Not supplied in Charting CSV",
+    support:(n(o.s1)||n(o.pivotpoints1)||n(o.stoploss)), resistance:(n(o.r1)||n(o.pivotpointr1)), rangeDays:5
+  };
+}
+
+document.getElementById("csvFile").addEventListener("change",e=>{
+ const f=e.target.files[0];
+ if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{
+   try{
+     const parsed=parseCSV(r.result);
+     if(!parsed.length){
+       imported=[];
+       document.getElementById("dataStatus").textContent="CSV selected — no valid stock rows found";
+       alert("No valid stock rows were found in this CSV. Please use the Chartink CSV export.");
+       return;
+     }
+     imported=parsed;
+     document.getElementById("mode").value="imported";
+     document.getElementById("minUpside").value="0";
+     document.getElementById("dataStatus").textContent=`CSV ready: ${f.name} • ${imported.length} stocks • Click RUN STWP SCAN`;
+     // IMPORTANT: selecting a file does NOT run the scan.
+   }catch(err){
+     console.error(err);
+     imported=[];
+     document.getElementById("dataStatus").textContent="CSV selected — read error";
+     alert("CSV could not be read. Please check the file format.");
+   }
+ };
+ r.onerror=()=>alert("Unable to read the CSV file.");
+ r.readAsText(f);
+});
+
+// No stock data is embedded. Data appears only after the user selects a CSV and clicks RUN STWP SCAN.
+imported = [];
+results = [];
+function exportResearch(){
+  const headers=["Symbol","TargetAverage","TargetMedian","TargetHigh","TargetLow","StrongBuy","Buy","Hold","Sell","StrongSell"];
+  const lines=[headers.join(",")];
+  Object.values(researchData).forEach(r=>{
+    lines.push([
+      r.symbol,r.avg,r.median,r.high,r.low,r.strongBuy,r.buy,r.hold,r.sell,r.strongSell
+    ].join(","));
+  });
+  const blob=new Blob([lines.join("\n")],{type:"text/csv"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="STWP_Analyst_Data.csv";a.click();
+}
+
+document.getElementById("researchFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const rows=parseCSVRaw(r.result);
+      rows.slice(1).forEach(v=>{
+        const s=(v[0]||"").trim().toUpperCase(); if(!s)return;
+        researchData[s]={
+          symbol:s,avg:+v[1]||0,median:+v[2]||0,high:+v[3]||0,low:+v[4]||0,
+          strongBuy:+v[5]||0,buy:+v[6]||0,hold:+v[7]||0,sell:+v[8]||0,strongSell:+v[9]||0
+        };
+      });
+      renderResearchList();
+      document.getElementById("dataStatus").textContent="Research CSV imported — click RUN STWP SCAN to refresh the ranking.";
+    }catch(err){alert("Could not import analyst CSV.");}
+  };
+  r.readAsText(f);
+});
+
+function parseCSVRaw(text){
+  const rows=[]; let row=[],field="",quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],next=text[i+1];
+    if(c==='"'){if(quoted&&next==='"'){field+='"';i++;}else quoted=!quoted;}
+    else if(c===','&&!quoted){row.push(field);field="";}
+    else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&next==='\n')i++;row.push(field);field="";if(row.some(v=>v.trim()))rows.push(row);row=[];}
+    else field+=c;
+  }
+  if(field!==""||row.length){row.push(field);if(row.some(v=>v.trim()))rows.push(row);}
+  return rows;
+}
+
+function downloadTemplate(){
+ const h="Symbol,Name,Price,Open,High,Low,Close,Volume,AvgVolume20,SMA20,SMA50,SMA200,RSI14,ADX14,ATR14,ROC12,RelStrength,OIChangePct,AnalystUpsidePct,BrokerUpgrades1M,TargetUpgrades1M,CatalystScore,FNOScore,FNO,Catalyst,Support,Resistance,RangeDays\n";
+ const ex="MCX,Multi Commodity Exchange,3640,3575,3675,3558,3640,1800000,900000,3520,3380,2860,68,29,105,9.2,1.35,8.5,11,2,2,8,9,Bullish,Broker upgrade + results,3520,3800,4\n";
+ const blob=new Blob([h+ex],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="STWP_Potential_Movers_Template.csv";a.click();
+}
+function exportResults(){
+ if(!results.length)return alert("Run the scan first.");
+ const headers=["Rank","Symbol","Score","Conviction","Bias","Price","ExpectedMovePct","ExpectedPrice","TimeWindow","RiskReward","ATR","ATRpct","AnalystScore15","AnalystConsensus","MedianUpsidePct","VolumeRatio","Momentum15","AlphaTrend10","ADX","Pivot","S1","S2","S3","R1","R2","R3","R1RoomPct","S1RiskPct","DataQualityPct"];
+ const rows=results.map((x,i)=>[i+1,x.symbol,x.total,x.conviction,x.bias,x.price,x.move.toFixed(1),x.expectedTarget.toFixed(2),x.window,x.ratio.toFixed(2),x.atr,x.atrPct.toFixed(2),x.analyst,x.consensus,(x.targetUpside||0).toFixed(1),x.vr.toFixed(2),x.mom,x.alpha,x.adx,x.pivot,x.s1,x.s2,x.s3,x.r1,x.r2,x.r3,x.r1Room.toFixed(1),x.s1Risk.toFixed(1),x.dataQuality]);
+ const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="STWP_Potential_Movers_v3_Results.csv";a.click();
+}
+function resetApp(){
+  imported=[];
+  results=[];
+  researchData={};
+  document.getElementById("mode").value="sample";
+  document.getElementById("search").value="";
+  document.getElementById("csvFile").value="";
+  document.getElementById("dataStatus").textContent="No data loaded — choose a CSV, then click RUN STWP SCAN";
+  document.getElementById("rows").innerHTML="";
+  document.getElementById("detailPanel").style.display="none";
+  ["total","high","watch","avg","bulls","bears"].forEach(id=>document.getElementById(id).textContent="0");
+  renderResearchList();
+}
+
+</script>
+<span id="dataStatus" style="display:none"></span></body>
+</html>
