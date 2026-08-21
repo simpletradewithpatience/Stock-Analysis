@@ -82,10 +82,10 @@ input,select,button{background:#091525;color:var(--text);border:1px solid #2a405
 <div id="scannerView">
   <div class="hero">
     <div>
-      <h1>STWP Potential Movers Engine v3.17</h1>
+      <h1>STWP Potential Movers Engine FINAL v4.00</h1>
       <div class="sub">Technical structure + momentum + participation + analyst/catalyst intelligence</div>
     </div>
-    <div class="badge">STWP RESEARCH TOOL • v3.17</div>
+    <div class="badge">STWP RESEARCH TOOL • FINAL v4.00</div>
   </div>
 <br>
   <div class="controls">
@@ -227,7 +227,7 @@ input,select,button{background:#091525;color:var(--text);border:1px solid #2a405
     <div id="detailBody" style="margin-top:12px"></div>
   </div>
   <div class="footer">
-    STWP Potential Movers Engine v3.17 is an educational/research-ranking tool. It does not provide guaranteed returns, investment advice, or a prediction of exact future price/time. Analyst targets are time-horizon dependent and can be wrong. Verify data and research reports before making any decision.
+    STWP Potential Movers Engine FINAL v4.00 is an educational/research-ranking tool. It does not provide guaranteed returns, investment advice, or a prediction of exact future price/time. Analyst targets are time-horizon dependent and can be wrong. Verify data and research reports before making any decision.
   </div>
 </div>
 <br>
@@ -522,23 +522,135 @@ function updateRecentMovement(){
     rn.innerHTML=v;
   }
 }
+
+function getNewsInput(){
+  const headline=(document.getElementById("newsHeadline")?.value||"").trim();
+  const date=document.getElementById("newsDate")?.value||"";
+  const category=document.getElementById("newsCategory")?.value||"";
+  const impact=document.getElementById("newsImpact")?.value||"";
+  const details=(document.getElementById("newsDetails")?.value||"").trim();
+  if(!headline && !details) return null;
+  return {headline,date,category,impact,details};
+}
+function newsStoryText(){
+  const n=getNewsInput();
+  if(!n) return "No significant recent news has been manually entered, so the current view is primarily driven by the technical, factor and analyst inputs.";
+  const impactPhrase=n.impact ? `${n.impact.toLowerCase()} ${n.category ? n.category.toLowerCase() : "news"} catalyst` : `${n.category ? n.category.toLowerCase()+" " : ""}news catalyst`;
+  const dateText=n.date ? ` dated ${n.date}` : "";
+  const detailText=n.details ? ` ${n.details}` : "";
+  return `The latest manually entered news${dateText} is ${n.impact ? "assessed as a "+impactPhrase : "being treated as a relevant news catalyst"}, with the headline “${n.headline}”.${detailText}`;
+}
+function updateNewsAndNarrative(){
+  const n=getNewsInput();
+  const el=document.getElementById("finalNarrativeText");
+  if(el && currentAnalysisStock) el.textContent=buildFinalNarrative(currentAnalysisStock);
+  const newsSummary=document.getElementById("newsSummaryOutput");
+  if(newsSummary) newsSummary.textContent=n ? `${n.impact||"Relevant"} • ${n.category||"News"} • ${n.headline}` : "No recent news entered.";
+}
+
 function buildFinalNarrative(x){
   const recent=getRecentMovement();
+  const n=getNewsInput();
   const moveText=recentMoveEstimate(recent,x);
   const entryText=recentEntryGuidance(recent);
-  const recentText=recent
-    ? `Recent price action adds useful context, with ${recent.prev>=0?"+":""}${recent.prev.toFixed(2)}% on the previous session and ${recent.d1>=0?"+":""}${recent.d1.toFixed(2)}% on the latest session, resulting in a ${recent.d2>=0?"+":""}${recent.d2.toFixed(2)}% two-session move (${classifyRecentMove(recent)}).`
-    : `Recent two-session price movement has not been entered, so the current view does not assume whether the stock is fresh or extended.`;
-  const directionText=x.bias==="Bullish"
-    ? `This supports a bullish directional view, although the strength of the setup should be judged against the size of the projected move and the stock's recent extension.`
+
+  const technicalStory=
+    `${x.symbol} presents a ${x.bias.toLowerCase()} STWP setup with a ${x.total}/100 STWP Technical Score and a ${x.factorScore||0}/25 STWP Factor Score. `+
+    `The chart structure is currently supported by Trend/Structure at ${x.tech}/20, Volume/Participation at ${x.vol}/15 and Momentum at ${x.mom}/15, which together indicate how well price structure, market participation and directional momentum are aligned. `;
+
+  const modelStory=x.bias==="Neutral"
+    ? `The model currently indicates a potential movement of approximately ${x.move.toFixed(1)}% over the next ${x.window}, but because the directional bias is neutral it does not establish a directional Model Expected Price; the percentage should therefore be interpreted as a potential volatility range rather than a projected upside or downside target. `
+    : `The model currently indicates an approximately ${x.move.toFixed(1)}% ${x.bias==="Bullish"?"upside":"downside"} move toward ₹${fmt(x.expectedTarget,2)} over the next ${x.window}, with a ${x.ratio>0?x.ratio.toFixed(2)+"×":"not established"} modeled risk/reward, giving the setup a measurable near-term opportunity while keeping the projected move within the context of the stock's current volatility and risk levels. `;
+
+  const recentStory=recent
+    ? `Recent price behaviour adds important context: the stock moved ${recent.prev>=0?"+":""}${recent.prev.toFixed(2)}% in the previous session and ${recent.d1>=0?"+":""}${recent.d1.toFixed(2)}% in the latest session, resulting in a ${recent.d2>=0?"+":""}${recent.d2.toFixed(2)}% move across the two sessions, which is classified as ${classifyRecentMove(recent)}. ${moveText} This recent expansion is important because a strong move can confirm market participation while also increasing the risk of short-term profit booking if price becomes extended. `
+    : `Recent two-session closing prices have not been entered, so the engine is not assuming whether the stock is fresh, consolidating or already extended. Adding the last three closes will allow the recent-movement component to refine the continuation and entry assessment. `;
+
+  const factorStory=
+    `The Factor Score provides a separate view of the stock's broader characteristics, with Momentum at ${x.factor?x.factor.momentum:0}/5, Sentiment at ${x.factor?x.factor.sentiment:0}/5, Low Volatility at ${x.factor?x.factor.lowVol:0}/5, Quality at ${x.factor?x.factor.quality:0}/5 and Value at ${x.factor?x.factor.value:0}/5. `+
+    `These factors help identify whether the technical opportunity is supported by business quality, valuation, stability and market sentiment, or whether one of these areas creates a meaningful conflict with the chart setup. `;
+
+  let newsStory="";
+  if(n){
+    const impact=n.impact||"relevant";
+    const category=n.category||"business";
+    const detail=n.details ? ` ${n.details}` : "";
+    const headline=n.headline ? ` The development is reflected in the headline, “${n.headline}”.` : "";
+    if(n.impact==="Strong Positive" || n.impact==="Positive"){
+      newsStory=
+        `A recent ${category.toLowerCase()} development provides an additional ${impact.toLowerCase()} catalyst for the setup.${headline}${detail} `+
+        `This news is particularly relevant because it can help explain the stock's recent market participation and provides fundamental or sector-level context behind the price action; however, the catalyst should complement the technical evidence rather than replace confirmation from price, volume and structure. `;
+    } else if(n.impact==="Strong Negative" || n.impact==="Negative"){
+      newsStory=
+        `A recent ${category.toLowerCase()} development introduces an additional ${impact.toLowerCase()} catalyst and therefore adds an important caution to the setup.${headline}${detail} `+
+        `The development needs to be weighed against the technical picture because negative news can weaken an otherwise constructive chart structure if price begins losing support or volume turns decisively defensive. `;
+    } else if(n.impact==="Mixed"){
+      newsStory=
+        `Recent ${category.toLowerCase()} developments present a mixed backdrop for the stock.${headline}${detail} `+
+        `This creates a conflict that makes confirmation more important, because the technical setup should not be treated as a high-conviction opportunity until price and volume demonstrate which side of the news is being absorbed by the market. `;
+    } else {
+      newsStory=
+        `Recent ${category.toLowerCase()} news provides additional context for the stock's current setup.${headline}${detail} `+
+        `At present, the news is treated as contextual rather than as a decisive directional catalyst, so the technical and factor evidence remains the primary basis for the STWP view. `;
+    }
+  } else {
+    newsStory=
+      `No significant fresh news catalyst has been entered for this stock, so the current assessment is being driven primarily by the technical structure, factor profile, recent price behaviour and analyst information rather than a specific news event. `;
+  }
+
+  const analystStory=x.research
+    ? `External analyst sentiment is ${x.consensus.toLowerCase()} with ${x.consensusStrength}/100 consensus strength, while the published median analyst target is ${x.medianUp<0
+      ? `${Math.abs(x.medianUp).toFixed(1)}% below the current market price, which suggests that the published target may be lagging the stock's recent re-rating rather than automatically invalidating the current technical setup`
+      : `${x.medianUp.toFixed(1)}% above the current market price, providing additional upside alignment with the current directional view`}. `+
+      `This analyst information is treated as supporting context rather than a standalone trading signal, particularly when the stock has experienced a sharp recent repricing. `
+    : `No manual analyst research has been entered, so the final assessment does not rely on an external analyst-consensus signal. `;
+
+  const setup=x.setupName||"Developing / No Clear Edge";
+  let setupStory="";
+  if(setup==="Breakout + Momentum Expansion"){
+    setupStory=
+      `The primary setup is a Breakout + Momentum Expansion setup. The combination of price structure, participation and momentum suggests that the market is attempting to establish acceptance above an important resistance or breakout area. When this type of setup is supported by fresh positive news, the catalyst can help explain the expansion; however, a strong initial reaction can also leave the stock temporarily extended. The preferred approach is therefore to look for sustained acceptance above the breakout zone with convincing volume, or a controlled breakout retest in which the former resistance begins acting as support. `;
+  } else if(setup==="Momentum Continuation"){
+    setupStory=
+      `The primary setup is Momentum Continuation. The stock is already displaying directional strength rather than starting from a completely fresh base, so the key question is whether momentum can continue without becoming excessively extended. A shallow consolidation followed by renewed volume, or a controlled pullback into dynamic support followed by bullish confirmation, would provide a healthier continuation entry than chasing a vertical move. `;
+  } else if(setup==="Pullback / Retest"){
+    setupStory=
+      `The primary setup is Pullback / Retest. The broader structure remains constructive, but price is currently retracing or testing a previously important area. The quality of this setup depends on support holding and buyers returning with confirmation; a bullish reversal candle, improving volume or a reclaim of the relevant short-term moving average would strengthen the case, while a decisive support failure would weaken it. `;
+  } else if(setup==="Trend Continuation"){
+    setupStory=
+      `The primary setup is Trend Continuation. The stock is maintaining a broader directional structure and the opportunity is less about chasing a new breakout and more about participating in an established trend at a sensible location. Pullbacks toward dynamic support, moving averages or prior swing areas followed by renewed momentum would generally offer a more disciplined entry than buying after an extended advance. `;
+  } else if(setup==="Reversal / Trend Change"){
+    setupStory=
+      `The primary setup is Reversal / Trend Change. Early evidence suggests that the previous directional structure may be losing control, but reversal setups require confirmation because the first move against a trend can fail. A sustained structural break accompanied by improving volume and momentum would provide stronger confirmation, while a return below the reversal zone would indicate that the original trend may still be dominant. `;
+  } else if(setup==="Range Breakout"){
+    setupStory=
+      `The primary setup is Range Breakout. The stock has been operating within a defined consolidation area and is attempting to expand beyond that range. The quality of the opportunity depends on whether price can sustain the breakout rather than briefly trade above resistance and fall back into the range; volume expansion and a successful retest would materially strengthen the setup. `;
+  } else if(setup==="Base / Accumulation"){
+    setupStory=
+      `The primary setup is Base / Accumulation. The stock is building a foundation rather than already displaying a fully developed momentum move, which means the opportunity is potentially earlier in its cycle but still requires patience. A decisive breakout from the base accompanied by meaningful volume would provide the confirmation needed to move the setup from observation into active consideration. `;
+  } else {
+    setupStory=
+      `The current setup is Developing / No Clear Edge. Although some technical or factor components may be constructive, the available conditions do not yet align strongly enough to justify forcing a directional setup. The preferred approach is to wait for a clear confirmation through price structure, volume and momentum rather than anticipating the move before the market confirms it. `;
+  }
+
+  const entryStory=x.bias==="Bullish"
+    ? `For a bullish position, the preferred entry is therefore ${entryText.toLowerCase()}`
     : x.bias==="Bearish"
-      ? `This supports a bearish directional view, although confirmation through price structure and volume remains important before treating the move as a high-conviction continuation.`
-      : `The technical conditions are not sufficiently aligned to establish a clear directional edge at this stage, so the stock should remain on watch for confirmation.`;
-  const analystText=x.research
-    ? `Analyst sentiment is ${x.consensus.toLowerCase()} with ${x.consensusStrength}/100 consensus strength, while the published median analyst target is ${x.medianUp<0?`${Math.abs(x.medianUp).toFixed(1)}% below the current price, which may indicate that the published target is lagging the stock's recent re-rating`:`${x.medianUp.toFixed(1)}% above the current price, providing additional upside alignment`}.`
-    : `No manual analyst research has been entered for this stock.`;
-  const setupText=`The ${x.setupName||"current"} setup is supported by the available trend, volume and momentum conditions, while the Factor Score stands at ${x.factor?x.factor.momentum:0}/5 for Momentum, ${x.factor?x.factor.sentiment:0}/5 for Sentiment, ${x.factor?x.factor.lowVol:0}/5 for Low Volatility, ${x.factor?x.factor.quality:0}/5 for Quality and ${x.factor?x.factor.value:0}/5 for Value.`;
-  return `${x.symbol} shows a ${x.bias.toLowerCase()} technical setup with a ${x.total}/100 STWP Technical Score and a ${x.factorScore||0}/25 STWP Factor Score. The technical structure is supported by Trend/Structure at ${x.tech}/20, Volume/Participation at ${x.vol}/15 and Momentum at ${x.mom}/15. ${x.bias==="Neutral" ? `The model indicates a potential movement of approximately ${x.move.toFixed(1)}% over the next ${x.window}, but no directional model target is established while the setup remains neutral.` : `The model indicates a ${x.move.toFixed(1)}% expected move toward ₹${fmt(x.expectedTarget,2)} over the next ${x.window}, with a ${x.ratio>0?x.ratio.toFixed(2)+"×":"not established"} modeled risk/reward.`} ${recentText} ${moveText} ${directionText} ${setupText} ${analystText} ${x.bias==="Bullish" ? `Overall STWP View: Bullish. ${entryText}` : x.bias==="Bearish" ? `Overall STWP View: Bearish. ${entryText}` : `Overall STWP View: Neutral — Wait for confirmation. ${entryText}`}`;
+      ? `For a bearish position, the preferred entry is therefore ${entryText.toLowerCase()}`
+      : `For now, the preferred approach is to wait for confirmation rather than force a trade; ${entryText.toLowerCase()}`;
+
+  const flagCount=(x.flags||[]).length;
+  const riskStory=flagCount
+    ? ` The supporting analysis contains ${flagCount} caution flag${flagCount===1?"":"s"}, so risk management remains important and the setup should be reassessed if the confirmation structure fails.`
+    : ` The supporting analysis does not currently identify a major caution flag, although normal price and event risk remain present.`;
+
+  const overall=x.bias==="Bullish"
+    ? `Overall STWP View: Bullish.`
+    : x.bias==="Bearish"
+      ? `Overall STWP View: Bearish.`
+      : `Overall STWP View: Neutral — Wait for Confirmation.`;
+
+  return `${technicalStory}${modelStory}${recentStory}${factorStory}${newsStory}${analystStory}${setupStory}${entryStory}.${riskStory} ${overall}`;
 }
 function buildFinalVerdict(x){
   const flags=x.flags||[];
@@ -707,7 +819,13 @@ function openStockWorkspace(symbol){
         <b style="font-size:18px">Breakout + Momentum Expansion</b>
         <div class="small" style="margin-top:5px">Strong trend structure, exceptional volume participation and supportive momentum indicate a breakout/continuation setup. Elevated volatility is treated as a risk characteristic of the expansion, not automatically as a bearish signal.</div>
       </div>
-<div id="finalNarrativeText" style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.75;font-weight:400;letter-spacing:.1px;padding:18px 20px;margin:14px 0 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.018);color:#e7edf7;text-align:left">${verdict.text}</div>
+
+      <div style="padding:10px 14px;margin:0 0 12px;border:1px solid rgba(255,255,255,.10);border-radius:8px">
+        <div class="small">NEWS / CATALYST CONTEXT</div>
+        <b id="newsSummaryOutput" style="font-size:14px">${(()=>{const n=getNewsInput();return n?`${n.impact||"Relevant"} • ${n.category||"News"} • ${n.headline}`:"No recent news entered."})()}</b>
+      </div>
+
+<div id="finalNarrativeText" style="font-family:Arial,Helvetica,sans-serif;font-size:15.5px;line-height:1.85;font-weight:400;letter-spacing:.1px;padding:18px 20px;margin:14px 0 16px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.018);color:#e7edf7;text-align:left">${verdict.text}</div>
 
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 16px">
         <div style="padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px">
@@ -778,6 +896,47 @@ function openStockWorkspace(symbol){
       <div class="small" style="margin-top:8px">Enter the last three closing prices. The engine uses the resulting 1-day and 2-day moves as context for momentum, extension risk and ideal-entry guidance. They do not directly change the Technical Score.</div>
     </div>
   </div>
+
+  <div class="section"><h2>📰 Recent News / Catalyst — Manual Input</h2>
+    <div class="formula">
+      <label>News Headline
+        <input id="newsHeadline" type="text" placeholder="e.g. Company wins major order worth ₹X crore">
+      </label>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px">
+        <label>News Date
+          <input id="newsDate" type="date">
+        </label>
+        <label>News Category
+          <select id="newsCategory">
+            <option value="">Select</option>
+            <option>Order Win</option>
+            <option>Results</option>
+            <option>Management</option>
+            <option>Regulatory</option>
+            <option>Corporate Action</option>
+            <option>Acquisition / JV</option>
+            <option>Sector News</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>News Impact
+          <select id="newsImpact">
+            <option value="">Select</option>
+            <option>Strong Positive</option>
+            <option>Positive</option>
+            <option>Neutral</option>
+            <option>Mixed</option>
+            <option>Negative</option>
+            <option>Strong Negative</option>
+          </select>
+        </label>
+      </div>
+      <label style="display:block;margin-top:10px">Key News Details
+        <textarea id="newsDetails" rows="3" placeholder="Enter the important business impact, order value, guidance, regulatory development, etc."></textarea>
+      </label>
+      <div class="small" style="margin-top:8px">News is used as contextual evidence in the Final Output narrative. It does not directly change the Technical Score.</div>
+    </div>
+  </div>
   <div class="section"><h2>1. Why it ranked</h2>${reasonHtml}</div>
 
   <div class="section"><h2>2. Risk flags / conflicts</h2>${flagHtml}</div>
@@ -824,6 +983,8 @@ function openStockWorkspace(symbol){
   `;
   ["recentClose2","recentClose1","recentClose0"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",updateRecentMovement);});
   updateRecentMovement();
+  ["newsHeadline","newsDate","newsCategory","newsImpact","newsDetails"].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener("input",updateNewsAndNarrative);el.addEventListener("change",updateNewsAndNarrative);}});
+  updateNewsAndNarrative();
   document.getElementById("scannerView").style.display="none";
   document.getElementById("analysisView").style.display="block";
   window.scrollTo(0,0);
